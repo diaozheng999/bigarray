@@ -1,0 +1,20 @@
+{
+  "name": "@nasi/bigarray",
+  "namespace": "bigarray",
+  "version": "0.1.0",
+  "sources": {
+    "dir" : "src",
+    "subdirs" : true
+  },
+  "package-specs": {
+    "module": "commonjs",
+    "in-source": false
+  },
+  "suffix": ".bs.js",
+  "bs-dependencies": [],
+  "warnings": {
+    "number": "-44",
+    "error" : "+101"
+  },
+  "ppx-flags": []
+}

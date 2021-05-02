@@ -1,0 +1,9 @@
+{
+  "name": "@nasi/bigarray",
+  "version": "0.1.0",
+  "author": "Diao Zheng",
+  "repository": "github:diaozheng999/bigarray",
+  "devDependencies": {
+    "bs-platform": "^9.0.2"
+  }
+}
