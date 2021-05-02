@@ -60,6 +60,9 @@ type c_layout = C_layout_typ
 
 type fortran_layout = Fortran_layout_typ
 
-type rec layout<'a> = 
+type rec layout<'a> =
   | C_layout: layout<c_layout>
   | Fortran_layout: layout<fortran_layout>
+
+let c_layout: layout<c_layout>
+let fortran_layout: layout<fortran_layout>

@@ -56,7 +56,8 @@ exception Unknown_kind
 
 external unsafe_expose_int_tag_of: kind<'a, 'b> => int = "%identity"
 
-let kind_size_in_bytes = (kind) => switch unsafe_expose_int_tag_of(kind) {
+let kind_size_in_bytes = kind =>
+  switch unsafe_expose_int_tag_of(kind) {
   | 0
   | 1
   | 2 => 1
@@ -71,12 +72,16 @@ let kind_size_in_bytes = (kind) => switch unsafe_expose_int_tag_of(kind) {
   | 11
   | 12 => 4
   | _ => raise(Unknown_kind)
-}
+  }
 
 type c_layout = C_layout_typ
 
 type fortran_layout = Fortran_layout_typ
 
-type rec layout<'a> = 
+type rec layout<'a> =
   | C_layout: layout<c_layout>
   | Fortran_layout: layout<fortran_layout>
+
+let c_layout = C_layout
+
+let fortran_layout = Fortran_layout
