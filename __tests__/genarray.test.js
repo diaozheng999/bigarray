@@ -43,6 +43,12 @@ function __64(array, n) {
   }
 }
 
+function fill(array, n) {
+  for (let i = 0; i < n; ++i) {
+    array.buffer[i] = __64_(array, i);
+  }
+}
+
 describe.each`
   label               | kind                    | constructor      | size
   ${"Float32"}        | ${Types.float32}        | ${Float32Array}  | ${4}
@@ -154,10 +160,7 @@ describe.each`
     let array;
     beforeEach(() => {
       array = Genarray.create(kind, Types.c_layout, [2, 3, 4]);
-      for (let i = 0; i < 24; ++i) {
-        array.buffer[i] = __64_(array, i);
-      }
-
+      fill(array, 24);
     });
 
     test("c getter", () => {
@@ -175,7 +178,7 @@ describe.each`
       expect(Genarray.get(array, [1, 0, 0])).toStrictEqual(_64(array, 12));
       expect(Genarray.get(array, [1, 2, 3])).toStrictEqual(_64(array, 23));
     });
-    
+
     test("fortran getter", () => {
       /*
       [ [ [ 0, 1 ]
@@ -212,7 +215,7 @@ describe.each`
       expect(array.buffer[12]).toStrictEqual(__64_(array, 204));
       expect(array.buffer[17]).toStrictEqual(__64_(array, 17));
       expect(array.buffer[23]).toStrictEqual(__64_(array, 205));
-    })
+    });
 
     test("fortran setter", () => {
       const f_array = Genarray.change_layout(array, Types.fortran_layout);
@@ -228,6 +231,70 @@ describe.each`
       expect(f_array.buffer[6]).toStrictEqual(__64_(f_array, 202));
       expect(f_array.buffer[17]).toStrictEqual(__64_(f_array, 17));
       expect(f_array.buffer[23]).toStrictEqual(__64_(f_array, 205));
-    })
+    });
+  });
+
+  describe.each`
+    label                  | layout                  | sub
+    ${"c sub_left"}        | ${Types.c_layout}       | ${"sub_left"}
+    ${"fortran sub_right"} | ${Types.fortran_layout} | ${"sub_right"}
+  `("$label", ({ layout, sub }) => {
+    test("0", () => {
+      const array = Genarray.create(kind, layout, []);
+      expect(() => Genarray[sub](array, 0, 1)).toThrow();
+    });
+    test("1", () => {
+      const array = Genarray.create(kind, layout, [10]);
+      fill(array, 10);
+      const slice = Genarray[sub](array, 2, 3);
+      expect(slice.buffer).toBe(array.buffer);
+      expect(slice.size).toBe(3);
+      expect(slice.start).toBe(2);
+
+      if (layout === Types.fortran_layout) {
+        expect(Genarray.get(slice, [1])).toStrictEqual(
+          Genarray.get(array, [3])
+        );
+      } else {
+        expect(Genarray.get(slice, [0])).toStrictEqual(
+          Genarray.get(array, [2])
+        );
+      }
+    });
+
+    test("multi-dimension", () => {
+      const array = Genarray.create(kind, layout, [5, 6, 7]);
+      fill(array, 210);
+      const slice = Genarray[sub](array, 2, 3);
+      expect(slice.buffer).toBe(array.buffer);
+
+      if (layout === Types.fortran_layout) {
+        expect(Genarray.get(slice, [2, 3, 1])).toStrictEqual(
+          Genarray.get(array, [2, 3, 3])
+        );
+      } else {
+        expect(Genarray.get(slice, [0, 1, 2])).toStrictEqual(
+          Genarray.get(array, [2, 1, 2])
+        );
+      }
+    });
+
+    test("double slice", () => {
+      const array = Genarray.create(kind, layout, [8, 8, 8]);
+      fill(array, 512);
+      const slice1 = Genarray[sub](array, 2, 4);
+      const slice2 = Genarray[sub](slice1, 2, 2);
+      expect(slice2.buffer).toBe(array.buffer);
+      expect(slice2.start).toBe(256);
+      if (layout === Types.fortran_layout) {
+        expect(Genarray.get(slice2, [2, 3, 1])).toStrictEqual(
+          Genarray.get(array, [2, 3, 5])
+        );
+      } else {
+        expect(Genarray.get(slice2, [0, 1, 2])).toStrictEqual(
+          Genarray.get(array, [4, 1, 2])
+        );
+      }
+    });
   });
 });

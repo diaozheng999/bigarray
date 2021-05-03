@@ -187,7 +187,7 @@ let set = (array, idx, n) => {
 
 let validate_c_layout_range = (dims, ofs, len) => {
   let n = dims[0]
-  if ofs < n || ofs + len >= n {
+  if ofs < 0 || ofs + len > n {
     invalid_arg("Genarray: unable to subset 0th dimension.")
   }
 }
@@ -197,7 +197,7 @@ let validate_fortran_layout_range = (dims, ofs, len, len_dims) => {
     invalid_arg("Cannot sub_right an array of 0 dimension.")
   }
   let n = dims[len_dims]
-  if ofs < n || ofs + len >= n {
+  if ofs < 0 || ofs + len > n {
     invalid_arg("Genarray: unsable to subset (n-1)th dimension.")
   }
 }
