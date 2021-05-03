@@ -1,0 +1,36 @@
+{
+  "name": "@nasi/bigarray-runtime",
+  "version": "0.1.0",
+  "author": "Diao Zheng",
+  "repository": "github:diaozheng999/bigarray",
+  "description": "Runtime for Bigarray implementation in ReScript",
+  "files": [
+    "/lib",
+    "tsconfig.json"
+  ],
+  "homepage": "https://github.com/diaozheng999/base",
+  "keywords": [
+    "rescript"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "prepack": "tsc -b",
+    "build": "tsc"
+  },
+  "types": "lib/index.d.ts",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-prettier": "^3.4.0",
+    "prettier": "^2.2.1",
+    "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "@rescript/std": "^9.1.0"
+  }
+}
