@@ -19,3 +19,7 @@ let size_in_bytes: t<'a, 'b, 'c> => int
 let get: (t<'a, 'b, 'c>, array<int>) => 'a
 
 let set: (t<'a, 'b, 'c>, array<int>, 'a) => unit
+
+let sub_left: (t<'a, 'b, c_layout>, int, int) => t<'a, 'b, c_layout>
+
+let sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout>
