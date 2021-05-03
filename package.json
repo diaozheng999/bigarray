@@ -6,12 +6,14 @@
   "scripts": {
     "build": "bsb -make-world",
     "clean": "bsb -clean-world",
-    "format": "node scripts/format.js"
+    "format": "node scripts/format.js",
+    "test": "bsb -make-world && jest"
   },
   "devDependencies": {
     "bs-platform": "^9.0.2",
     "chalk": "^4.1.1",
     "command-exists": "^1.2.9",
+    "jest": "^26.6.3",
     "walk": "^2.3.14"
   }
 }

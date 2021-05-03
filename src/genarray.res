@@ -73,7 +73,10 @@ let accumulate_dims = (dims, layout) => {
 }
 
 let create = (kind, layout, dims) => {
-  let size = Js.Array2.reduce(dims, (a, b) => a * b, 1)
+  let size = switch Js.Array2.length(dims) {
+  | 0 => 0
+  | _ => Js.Array2.reduce(dims, (a, b) => a * b, 1)
+  }
   let buffer = switch unsafe_expose_int_tag_of_kind(kind) {
   | 0 => int8_signed(size)
   | 1 => int8_unsigned(size)
@@ -131,11 +134,12 @@ external unsafe_set: (buffer<'a, 'b>, int, 'a) => unit = "%array_unsafe_set"
 let compute_idx = ({a_dims, start, size, layout}, idx) => {
   let id = Js.Array2.reducei(
     idx,
-    (acc, v, i) => v * Js.Array2.unsafe_get(a_dims, i) + acc,
-    /* 
+    /*
      crazy, but since C layout (tag 0) starts from 0, and fortran layout (tag
      1) starts from 1, we can use this to offset everything properly */
-    start - unsafe_expose_int_tag_of_layout(layout),
+    (acc, v, i) =>
+      (v - unsafe_expose_int_tag_of_layout(layout)) * Js.Array2.unsafe_get(a_dims, i) + acc,
+    start,
   )
   if id >= size {
     invalid_arg("Array index out of bounds.")
@@ -144,12 +148,30 @@ let compute_idx = ({a_dims, start, size, layout}, idx) => {
   }
 }
 
+@warning("-27")
+let map_bigint_to_int64 = (n: 'a): 'a => %raw("[Number(n >> 32n), Number(n & 0xffffffffn) >>> 0]")
+
+@warning("-27")
+let map_int64_to_bigint = (n: 'a): 'a => %raw("BigInt(n[0]) << 32n | BigInt(n[1])")
+
 let get = (array, idx) => {
   let id = compute_idx(array, idx)
-  unsafe_get(array.buffer, id)
+  // ReScript tends to inline map_bigint_to_int64. We keep the variables the same
+  // to prevent runtime issues.
+  let n = unsafe_get(array.buffer, id)
+  if unsafe_expose_int_tag_of_kind(array.kind) == unsafe_expose_int_tag_of_kind(Int64) {
+    map_bigint_to_int64(n)
+  } else {
+    n
+  }
 }
 
-let set = (array, idx, value) => {
+let set = (array, idx, n) => {
   let id = compute_idx(array, idx)
-  unsafe_set(array.buffer, id, value)
+  if unsafe_expose_int_tag_of_kind(array.kind) == unsafe_expose_int_tag_of_kind(Int64) {
+    // amazingly ReScript does not inline this
+    unsafe_set(array.buffer, id, map_int64_to_bigint(n))
+  } else {
+    unsafe_set(array.buffer, id, n)
+  }
 }
