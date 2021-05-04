@@ -83,5 +83,13 @@ export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, 
       this.view.setValue(i + 1, pack1(value));
     }
 
+    fill(value: T) {
+      const even = pack0(value);
+      const odd = pack1(value);
+      for (let i = 0; i < this.view.length; i += 2) {
+        this.view.setValue(i, even);
+        this.view.setValue(i + 1, odd);
+      }
+    }
   }
 }

@@ -76,10 +76,10 @@ function __64(array, n) {
 }
 
 /**
- * 
- * @param {require("@nasi/bigarray-runtime").C} array 
- * @param {*} n 
- * @param {*} v 
+ *
+ * @param {require("@nasi/bigarray-runtime").C} array
+ * @param {*} n
+ * @param {*} v
  */
 function fill(array, n, v) {
   for (let i = 0; i < n; ++i) {
@@ -334,8 +334,9 @@ describe.each`
   });
 
   describe.each`
-    label             | layout            | slice
-    ${"c slice_left"} | ${Types.c_layout} | ${"slice_left"}
+    label                    | layout                  | slice
+    ${"c slice_left"}        | ${Types.c_layout}       | ${"slice_left"}
+    ${"fortran slice_right"} | ${Types.fortran_layout} | ${"slice_right"}
   `("$label", ({ layout, slice }) => {
     test("slicing 0 dimensions", () => {
       const array = Genarray.create(kind, layout, []);

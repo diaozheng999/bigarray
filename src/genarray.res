@@ -30,3 +30,8 @@ external change_layout: (t<'a, 'b, 'c>, layout<'d>) => t<'a, 'b, 'd> = "changeLa
 
 @send
 external slice_right: (t<'a, 'b, fortran_layout>, array<int>) => t<'a, 'b, fortran_layout> = "slice"
+
+@send
+external blit: (t<'a, 'b, 'c>, t<'a, 'b, 'c>) => unit = "blit"
+
+@send external fill: (t<'a, 'b, 'c>, 'a) => unit = "fill"

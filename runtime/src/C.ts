@@ -163,6 +163,14 @@ export class C<T> {
     );
   }
 
+  blit(other: C<T>) {
+    this.buffer.set(other.buffer);
+  }
+
+  fill(value: T) {
+    this.buffer.fill(value);
+  }
+
   validateRange = (v: number, i: number) => {
     if (v < 0 || v >= this.dimensions[i]) {
       invalid_arg("Index out of bounds.");

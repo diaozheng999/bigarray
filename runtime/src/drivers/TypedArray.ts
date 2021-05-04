@@ -19,4 +19,5 @@ export interface TypedArray<T> {
   subarray(begin?: number, end?: number): TypedArray<T>;
   set(array: ArrayLike<T> | TypedArray<T>, offset?: number): void;
   setValue(idx: number, value: T): void;
+  fill(value: T): void;
 }

@@ -27,3 +27,7 @@ let sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout
 let slice_left: (t<'a, 'b, c_layout>, array<int>) => t<'a, 'b, c_layout>
 
 let slice_right: (t<'a, 'b, fortran_layout>, array<int>) => t<'a, 'b, fortran_layout>
+
+let blit: (t<'a, 'b, 'c>, t<'a, 'b, 'c>) => unit
+
+let fill: (t<'a, 'b, 'c>, 'a) => unit

@@ -39,3 +39,9 @@ export function changeLayout<T>(item: C<T>, layout: number) {
   }
   return item;
 }
+
+export function constant(kind: number, layout: number, value: unknown) {
+  const array = create(kind, layout, []);
+  array.set0(value);
+  return array;
+}
