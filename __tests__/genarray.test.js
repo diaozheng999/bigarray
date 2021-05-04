@@ -1,6 +1,8 @@
 const Genarray = require("../lib/js/src/genarray.bs");
 const Types = require("../lib/js/src/types.bs");
 
+const Runtime = require("@nasi/bigarray-runtime");
+
 function _64(array, n) {
   switch (array.kind) {
     case Types.int64:
@@ -16,7 +18,7 @@ function _64(array, n) {
 function __64_(array, n) {
   switch (array.kind) {
     case Types.int64:
-      return BigInt(n);
+      return [0, n >>> 0];
     case Types.int8_signed:
       if (n > 127) {
         return -256 + n;
@@ -45,28 +47,28 @@ function __64(array, n) {
 
 function fill(array, n) {
   for (let i = 0; i < n; ++i) {
-    array.buffer[i] = __64_(array, i);
+    array.buffer.setValue(i, __64_(array, i));
   }
 }
 
 describe.each`
-  label               | kind                    | constructor      | size
-  ${"Float32"}        | ${Types.float32}        | ${Float32Array}  | ${4}
-  ${"Float64"}        | ${Types.float64}        | ${Float64Array}  | ${8}
-  ${"Complex32"}      | ${Types.complex32}      | ${Array}         | ${4}
-  ${"Complex64"}      | ${Types.complex64}      | ${Array}         | ${8}
-  ${"Int8_signed"}    | ${Types.int8_signed}    | ${Int8Array}     | ${1}
-  ${"Int8_unsigned"}  | ${Types.int8_unsigned}  | ${Uint8Array}    | ${1}
-  ${"Int16_signed"}   | ${Types.int16_signed}   | ${Int16Array}    | ${2}
-  ${"Int16_unsigned"} | ${Types.int16_unsigned} | ${Uint16Array}   | ${2}
-  ${"Int"}            | ${Types.$$int}          | ${Int32Array}    | ${4}
-  ${"Int32"}          | ${Types.int32}          | ${Int32Array}    | ${4}
-  ${"Int64"}          | ${Types.int64}          | ${BigInt64Array} | ${8}
-  ${"Nativeint"}      | ${Types.nativeint}      | ${Int32Array}    | ${4}
-  ${"Char"}           | ${Types.$$char}         | ${Uint8Array}    | ${1}
+  label               | kind                    | constructor               | size
+  ${"Float32"}        | ${Types.float32}        | ${Runtime.Float32Array}   | ${4}
+  ${"Float64"}        | ${Types.float64}        | ${Runtime.Float64Array}   | ${8}
+  ${"Complex32"}      | ${Types.complex32}      | ${Runtime.Complex32Array} | ${8}
+  ${"Complex64"}      | ${Types.complex64}      | ${Runtime.Complex64Array} | ${16}
+  ${"Int8_signed"}    | ${Types.int8_signed}    | ${Runtime.Int8Array}      | ${1}
+  ${"Int8_unsigned"}  | ${Types.int8_unsigned}  | ${Runtime.Uint8Array}     | ${1}
+  ${"Int16_signed"}   | ${Types.int16_signed}   | ${Runtime.Int16Array}     | ${2}
+  ${"Int16_unsigned"} | ${Types.int16_unsigned} | ${Runtime.Uint16Array}    | ${2}
+  ${"Int"}            | ${Types.$$int}          | ${Runtime.Int32Array}     | ${4}
+  ${"Int32"}          | ${Types.int32}          | ${Runtime.Int32Array}     | ${4}
+  ${"Int64"}          | ${Types.int64}          | ${Runtime.Int64Array}     | ${8}
+  ${"Nativeint"}      | ${Types.nativeint}      | ${Runtime.Int32Array}     | ${4}
+  ${"Char"}           | ${Types.$$char}         | ${Runtime.Uint8Array}     | ${1}
 `("array of $label", ({ label, kind, constructor, size }) => {
   test.each`
-    layout_desc  | layout                  | dim_n | size   | dim             | a_dim
+    layout_desc  | layout                  | dim_n | len    | dim             | a_dim
     ${"c"}       | ${Types.c_layout}       | ${1}  | ${10}  | ${[10]}         | ${[1]}
     ${"c"}       | ${Types.c_layout}       | ${0}  | ${0}   | ${[]}           | ${[]}
     ${"c"}       | ${Types.c_layout}       | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[36, 12, 6, 1]}
@@ -75,15 +77,14 @@ describe.each`
     ${"fortran"} | ${Types.fortran_layout} | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[1, 5, 15, 30]}
   `(
     "$layout_desc-layout constructor with dim $dim_n",
-    ({ layout, size, dim, a_dim }) => {
+    ({ layout, len, dim, a_dim }) => {
       const array = Genarray.create(kind, layout, dim);
 
       expect(array.buffer).toBeInstanceOf(constructor);
-      expect(array.buffer.length).toBe(size);
+      expect(array.buffer.length).toBe(len);
       expect(array.layout).toBe(layout);
       expect(array.kind).toBe(kind);
-      expect(array.start).toBe(0);
-      expect(array.size).toBe(size);
+      expect(Genarray.size_in_bytes(array)).toBe(size * len);
       expect(array.a_dims).toStrictEqual(a_dim);
     }
   );
@@ -209,12 +210,12 @@ describe.each`
       Genarray.set(array, [1, 0, 0], __64(array, 204));
       Genarray.set(array, [1, 2, 3], __64(array, 205));
 
-      expect(array.buffer[0]).toStrictEqual(__64_(array, 201));
-      expect(array.buffer[1]).toStrictEqual(__64_(array, 202));
-      expect(array.buffer[4]).toStrictEqual(__64_(array, 203));
-      expect(array.buffer[12]).toStrictEqual(__64_(array, 204));
-      expect(array.buffer[17]).toStrictEqual(__64_(array, 17));
-      expect(array.buffer[23]).toStrictEqual(__64_(array, 205));
+      expect(array.buffer.at(0)).toStrictEqual(__64_(array, 201));
+      expect(array.buffer.at(1)).toStrictEqual(__64_(array, 202));
+      expect(array.buffer.at(4)).toStrictEqual(__64_(array, 203));
+      expect(array.buffer.at(12)).toStrictEqual(__64_(array, 204));
+      expect(array.buffer.at(17)).toStrictEqual(__64_(array, 17));
+      expect(array.buffer.at(23)).toStrictEqual(__64_(array, 205));
     });
 
     test("fortran setter", () => {
@@ -225,12 +226,12 @@ describe.each`
       Genarray.set(f_array, [2, 1, 1], __64(f_array, 204));
       Genarray.set(f_array, [2, 3, 4], __64(f_array, 205));
 
-      expect(f_array.buffer[0]).toStrictEqual(__64_(f_array, 201));
-      expect(f_array.buffer[1]).toStrictEqual(__64_(f_array, 204));
-      expect(f_array.buffer[2]).toStrictEqual(__64_(f_array, 203));
-      expect(f_array.buffer[6]).toStrictEqual(__64_(f_array, 202));
-      expect(f_array.buffer[17]).toStrictEqual(__64_(f_array, 17));
-      expect(f_array.buffer[23]).toStrictEqual(__64_(f_array, 205));
+      expect(f_array.buffer.at(0)).toStrictEqual(__64_(f_array, 201));
+      expect(f_array.buffer.at(1)).toStrictEqual(__64_(f_array, 204));
+      expect(f_array.buffer.at(2)).toStrictEqual(__64_(f_array, 203));
+      expect(f_array.buffer.at(6)).toStrictEqual(__64_(f_array, 202));
+      expect(f_array.buffer.at(17)).toStrictEqual(__64_(f_array, 17));
+      expect(f_array.buffer.at(23)).toStrictEqual(__64_(f_array, 205));
     });
   });
 
@@ -247,9 +248,9 @@ describe.each`
       const array = Genarray.create(kind, layout, [10]);
       fill(array, 10);
       const slice = Genarray[sub](array, 2, 3);
-      expect(slice.buffer).toBe(array.buffer);
-      expect(slice.size).toBe(3);
-      expect(slice.start).toBe(2);
+      expect(slice.buffer.buffer).toBe(array.buffer.buffer);
+      expect(slice.buffer.length).toBe(3);
+      expect(slice.buffer.byteOffset).toBe(2 * size);
 
       if (layout === Types.fortran_layout) {
         expect(Genarray.get(slice, [1])).toStrictEqual(
@@ -266,7 +267,7 @@ describe.each`
       const array = Genarray.create(kind, layout, [5, 6, 7]);
       fill(array, 210);
       const slice = Genarray[sub](array, 2, 3);
-      expect(slice.buffer).toBe(array.buffer);
+      expect(slice.buffer.buffer).toBe(array.buffer.buffer);
 
       if (layout === Types.fortran_layout) {
         expect(Genarray.get(slice, [2, 3, 1])).toStrictEqual(
@@ -284,8 +285,8 @@ describe.each`
       fill(array, 512);
       const slice1 = Genarray[sub](array, 2, 4);
       const slice2 = Genarray[sub](slice1, 2, 2);
-      expect(slice2.buffer).toBe(array.buffer);
-      expect(slice2.start).toBe(256);
+      expect(slice2.buffer.buffer).toBe(array.buffer.buffer);
+      expect(slice2.buffer.byteOffset).toBe(256 * size);
       if (layout === Types.fortran_layout) {
         expect(Genarray.get(slice2, [2, 3, 1])).toStrictEqual(
           Genarray.get(array, [2, 3, 5])

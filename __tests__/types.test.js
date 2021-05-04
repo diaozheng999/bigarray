@@ -4,8 +4,8 @@ test.each`
   label               | kind                    | size
   ${"Float32"}        | ${Types.float32}        | ${4}
   ${"Float64"}        | ${Types.float64}        | ${8}
-  ${"Complex32"}      | ${Types.complex32}      | ${4}
-  ${"Complex64"}      | ${Types.complex64}      | ${8}
+  ${"Complex32"}      | ${Types.complex32}      | ${8}
+  ${"Complex64"}      | ${Types.complex64}      | ${16}
   ${"Int8_signed"}    | ${Types.int8_signed}    | ${1}
   ${"Int8_unsigned"}  | ${Types.int8_unsigned}  | ${1}
   ${"Int16_signed"}   | ${Types.int16_signed}   | ${2}

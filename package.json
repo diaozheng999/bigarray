@@ -9,6 +9,9 @@
     "format": "node scripts/format.js",
     "test": "bsb -make-world && jest"
   },
+  "dependencies": {
+    "@nasi/bigarray-runtime": "file:runtime"
+  },
   "devDependencies": {
     "bs-platform": "^9.0.2",
     "chalk": "^4.1.1",

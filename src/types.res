@@ -66,11 +66,11 @@ let kind_size_in_bytes = kind =>
   | 5
   | 6
   | 7
-  | 8
-  | 9 => 4
+  | 8 => 4
+  | 9
   | 10
-  | 11
-  | 12 => 8
+  | 11 => 8
+  | 12 => 16
   | _ => raise(Unknown_kind)
   }
 

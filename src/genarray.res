@@ -9,35 +9,40 @@ type t<'ml_kind, 'elt_kind, 'layout> = {
   layout: layout<'layout>,
   dims: array<int>,
   a_dims: array<int>,
-  start: int,
-  size: int,
 }
 
-@new external float32: int => buffer<'a, 'b> = "Float32Array"
+@module("@nasi/bigarray-runtime") @new external float32: int => buffer<'a, 'b> = "Float32Array"
 
-@new external float64: int => buffer<'a, 'b> = "Float64Array"
+@module("@nasi/bigarray-runtime") @new external float64: int => buffer<'a, 'b> = "Float64Array"
 
-@val external complex32: int => buffer<'a, 'b> = "Array"
+@module("@nasi/bigarray-runtime") @new external complex32: int => buffer<'a, 'b> = "Complex32Array"
 
-@val external complex64: int => buffer<'a, 'b> = "Array"
+@module("@nasi/bigarray-runtime") @new external complex64: int => buffer<'a, 'b> = "Complex64Array"
 
-@new external int8_signed: int => buffer<'a, 'b> = "Int8Array"
+@module("@nasi/bigarray-runtime") @new external int8_signed: int => buffer<'a, 'b> = "Int8Array"
 
-@new external int8_unsigned: int => buffer<'a, 'b> = "Uint8Array"
+@module("@nasi/bigarray-runtime") @new external int8_unsigned: int => buffer<'a, 'b> = "Uint8Array"
 
-@new external int16_signed: int => buffer<'a, 'b> = "Int16Array"
+@module("@nasi/bigarray-runtime") @new external int16_signed: int => buffer<'a, 'b> = "Int16Array"
 
-@new external int16_unsigned: int => buffer<'a, 'b> = "Uint16Array"
+@module("@nasi/bigarray-runtime") @new
+external int16_unsigned: int => buffer<'a, 'b> = "Uint16Array"
 
-@new external int: int => buffer<'a, 'b> = "Int32Array"
+@module("@nasi/bigarray-runtime") @new external int: int => buffer<'a, 'b> = "Int32Array"
 
-@new external int32: int => buffer<'a, 'b> = "Int32Array"
+@module("@nasi/bigarray-runtime") @new external int32: int => buffer<'a, 'b> = "Int32Array"
 
-@new external int64: int => buffer<'a, 'b> = "BigInt64Array"
+@module("@nasi/bigarray-runtime") @new external int64: int => buffer<'a, 'b> = "Int64Array"
 
-@new external nativeint: int => buffer<'a, 'b> = "Int32Array"
+@module("@nasi/bigarray-runtime") @new external nativeint: int => buffer<'a, 'b> = "Int32Array"
 
-@new external char: int => buffer<'a, 'b> = "Uint8Array"
+@module("@nasi/bigarray-runtime") @new external char: int => buffer<'a, 'b> = "Uint8Array"
+
+@send external unsafe_get: (buffer<'a, 'b>, int) => 'a = "at"
+@send external unsafe_set: (buffer<'a, 'b>, int, 'a) => unit = "setValue"
+
+@get external size: buffer<'a, 'b> => int = "length"
+@send external subarray: (buffer<'a, 'b>, ~begin: int, ~end: int) => buffer<'a, 'b> = "subarray"
 
 let accumulate_c_dim = dims => {
   let result = Array.make(Js.Array2.length(dims), 1)
@@ -102,8 +107,6 @@ let create = (kind, layout, dims) => {
     layout: layout,
     dims: dims,
     a_dims: accumulate_dims(dims, layout),
-    start: 0,
-    size: size,
   }
 }
 
@@ -115,26 +118,17 @@ let kind = ({kind}) => kind
 
 let layout = ({layout}) => layout
 
-let change_layout = ({buffer, kind, dims, start, size}, layout) => {
+let change_layout = ({buffer, kind, dims}, layout) => {
   buffer: buffer,
   kind: kind,
   dims: dims,
-  start: start,
-  size: size,
   layout: layout,
   a_dims: accumulate_dims(dims, layout),
 }
 
-let size_in_bytes = ({size, kind}) => size * kind_size_in_bytes(kind)
+let size_in_bytes = ({buffer, kind}) => size(buffer) * kind_size_in_bytes(kind)
 
-/*
-   Redefine ReScript primitives here to allow us to generate array indexing
-   primitives in JavaScript
- */
-external unsafe_get: (buffer<'a, 'b>, int) => 'a = "%array_unsafe_get"
-external unsafe_set: (buffer<'a, 'b>, int, 'a) => unit = "%array_unsafe_set"
-
-let compute_idx = ({a_dims, dims, start, layout}, idx) => {
+let compute_idx = ({a_dims, dims, layout}, idx) => {
   // crazy, but since C layout (tag 0) starts from 0, and fortran layout
   // (tag 1) starts from 1, we can use this to offset everything properly
   let n = unsafe_expose_int_tag_of_layout(layout)
@@ -148,41 +142,23 @@ let compute_idx = ({a_dims, dims, start, layout}, idx) => {
       }
       idx * Js.Array2.unsafe_get(a_dims, i) + acc
     },
-    start,
+    0,
   )
 }
 
-let compute_idx_unsafe = ({a_dims, start, layout}, idx) => {
+let compute_idx_unsafe = ({a_dims, layout}, idx) => {
   let n = unsafe_expose_int_tag_of_layout(layout)
-  Js.Array2.reducei(idx, (acc, v, i) => (v - n) * Js.Array2.unsafe_get(a_dims, i) + acc, start)
+  Js.Array2.reducei(idx, (acc, v, i) => (v - n) * Js.Array2.unsafe_get(a_dims, i) + acc, 0)
 }
-
-@warning("-27")
-let map_bigint_to_int64 = (n: 'a): 'a => %raw("[Number(n >> 32n), Number(n & 0xffffffffn) >>> 0]")
-
-@warning("-27")
-let map_int64_to_bigint = (n: 'a): 'a => %raw("BigInt(n[0]) << 32n | BigInt(n[1])")
 
 let get = (array, idx) => {
   let id = compute_idx(array, idx)
-  // ReScript tends to inline map_bigint_to_int64. We keep the variables the same
-  // to prevent runtime issues.
-  let n = unsafe_get(array.buffer, id)
-  if unsafe_expose_int_tag_of_kind(array.kind) == unsafe_expose_int_tag_of_kind(Int64) {
-    map_bigint_to_int64(n)
-  } else {
-    n
-  }
+  unsafe_get(array.buffer, id)
 }
 
 let set = (array, idx, n) => {
   let id = compute_idx(array, idx)
-  if unsafe_expose_int_tag_of_kind(array.kind) == unsafe_expose_int_tag_of_kind(Int64) {
-    // amazingly ReScript does not inline this
-    unsafe_set(array.buffer, id, map_int64_to_bigint(n))
-  } else {
-    unsafe_set(array.buffer, id, n)
-  }
+  unsafe_set(array.buffer, id, n)
 }
 
 let validate_c_layout_range = (dims, ofs, len) => {
@@ -202,48 +178,33 @@ let validate_fortran_layout_range = (dims, ofs, len, len_dims) => {
   }
 }
 
-let sub_left = ({buffer, kind, layout, a_dims, dims, start}, ofs, len) => {
-  let n_dims = Js.Array2.length(dims)
+let sub_left = ({buffer, kind, layout, a_dims, dims}, ofs, len) => {
   validate_c_layout_range(dims, ofs, len)
-  let start = ofs * a_dims[0] + start
+  let begin = ofs * a_dims[0]
+  let end = (ofs + len) * a_dims[0]
   let dims = Js.Array2.copy(dims)
   Js.Array2.unsafe_set(dims, 0, len)
-  let multiplier = if n_dims > 1 {
-    Js.Array2.unsafe_get(a_dims, 1)
-  } else {
-    1
-  }
-  let size = len * multiplier
   {
-    buffer: buffer,
+    buffer: subarray(buffer, ~begin, ~end),
     kind: kind,
     layout: layout,
     dims: dims,
-    start: start,
-    size: size,
     a_dims: a_dims,
   }
 }
 
-let sub_right = ({buffer, kind, layout, a_dims, dims, start}, ofs, len) => {
+let sub_right = ({buffer, kind, layout, a_dims, dims}, ofs, len) => {
   let idx = Js.Array2.length(dims) - 1
   validate_fortran_layout_range(dims, ofs, len, idx)
-  let start = ofs * a_dims[idx] + start
+  let begin = ofs * a_dims[idx]
+  let end = (ofs + len) * a_dims[idx]
   let dims = Js.Array2.copy(dims)
   Js.Array2.unsafe_set(dims, idx, len)
-  let multiplier = if idx > 0 {
-    Js.Array2.unsafe_get(a_dims, idx - 1)
-  } else {
-    1
-  }
-  let size = len * multiplier
   {
-    buffer: buffer,
+    buffer: subarray(buffer, ~begin, ~end),
     kind: kind,
     layout: layout,
     dims: dims,
-    start: start,
-    size: size,
     a_dims: a_dims,
   }
 }
