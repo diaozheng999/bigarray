@@ -4,6 +4,10 @@ declare module "@rescript/std/lib/js/caml_hash_primitive" {
   export function caml_hash_mix_final(state: number): number;
 }
 
+declare module "@rescript/std/lib/js/pervasives" {
+  export function invalid_arg(s: string): never;
+}
+
 declare module "@rescript/std/lib/js/caml_int64" {
   export type int64 = [number, number];
   export function mk(lo: number, hi: number): int64;

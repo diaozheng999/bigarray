@@ -2,26 +2,31 @@ open Types
 
 type t<'ml_kind, 'elt_kind, 'layout>
 
-let create: (kind<'a, 'b>, layout<'c>, array<int>) => t<'a, 'b, 'c>
+@module("@nasi/bigarray-runtime")
+external create: (kind<'a, 'b>, layout<'c>, array<int>) => t<'a, 'b, 'c> = "create"
 
-let num_dims: t<'a, 'b, 'c> => int
+@get external num_dims: t<'a, 'b, 'c> => int = "ndim"
 
-let nth_dim: (t<'a, 'b, 'c>, int) => int
+@send external nth_dim: (t<'a, 'b, 'c>, int) => int = "nthDim"
 
-let kind: t<'a, 'b, 'c> => kind<'a, 'b>
+@get external kind: t<'a, 'b, 'c> => kind<'a, 'b> = "kind"
 
-let layout: t<'a, 'b, 'c> => layout<'c>
+@get external layout: t<'a, 'b, 'c> => layout<'c> = "layout"
 
-let change_layout: (t<'a, 'b, 'c>, layout<'d>) => t<'a, 'b, 'd>
+@module("@nasi/bigarray-runtime")
+external change_layout: (t<'a, 'b, 'c>, layout<'d>) => t<'a, 'b, 'd> = "changeLayout"
 
-let size_in_bytes: t<'a, 'b, 'c> => int
+@send external size_in_bytes: t<'a, 'b, 'c> => int = "byteSize"
 
-let get: (t<'a, 'b, 'c>, array<int>) => 'a
+@send external get: (t<'a, 'b, 'c>, array<int>) => 'a = "get"
 
-let set: (t<'a, 'b, 'c>, array<int>, 'a) => unit
+@send external set: (t<'a, 'b, 'c>, array<int>, 'a) => unit = "set"
 
-let sub_left: (t<'a, 'b, c_layout>, int, int) => t<'a, 'b, c_layout>
+@send external sub_left: (t<'a, 'b, c_layout>, int, int) => t<'a, 'b, c_layout> = "sub"
 
-let sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout>
+@send external sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout> = "sub"
 
-let slice_left: (t<'a, 'b, c_layout>, array<int>) => t<'a, 'b, c_layout>
+@send external slice_left: (t<'a, 'b, c_layout>, array<int>) => t<'a, 'b, c_layout> = "slice"
+
+@send
+external slice_right: (t<'a, 'b, fortran_layout>, array<int>) => t<'a, 'b, fortran_layout> = "slice"

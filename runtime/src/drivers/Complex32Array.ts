@@ -1,12 +1,8 @@
-import Float64Array from "./Float64Array";
+import { Complex } from "./Complex64Array";
+import Float32Array from "./Float32Array";
 import { MakeStruct } from "./TwoElementStructArray";
 
-export interface Complex {
-  re: number;
-  im: number;
-}
-
-const Complex64Array = MakeStruct({
+const Complex32Array = MakeStruct({
   unpack(re: number, im: number) {
     return { re, im };
   },
@@ -16,7 +12,8 @@ const Complex64Array = MakeStruct({
   pack1({ im }: Complex) {
     return im;
   },
-  creator: Float64Array,
+  creator: Float32Array,
+  kind: 9,
 });
 
-export default Complex64Array;
+export default Complex32Array;

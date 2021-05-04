@@ -1,22 +1,10 @@
-const Genarray = require("../lib/js/src/genarray.bs");
+const Genarray = require("../lib/js/src/genarray_for_testing.bs");
 const Types = require("../lib/js/src/types.bs");
 
 const Runtime = require("@nasi/bigarray-runtime");
 
 /**
- * @typedef {{
- *  buffer: require("@nasi/bigarray-runtime/lib/TypedArray").TypedArray<number>;
- *  layout: number;
- *  kind: number;
- *  dims: number[];
- *  a_dims: number[];
- * }} t
- */
-
-/**
  * Fixes array indices for both
- * @param {t} array
- * @param {number[]} idx
  */
 function _l(array, idx) {
   if (array.layout) {
@@ -87,6 +75,12 @@ function __64(array, n) {
   }
 }
 
+/**
+ * 
+ * @param {require("@nasi/bigarray-runtime").C} array 
+ * @param {*} n 
+ * @param {*} v 
+ */
 function fill(array, n, v) {
   for (let i = 0; i < n; ++i) {
     array.buffer.setValue(i, __64_(array, v || i));
@@ -108,7 +102,7 @@ describe.each`
   ${"Int64"}          | ${Types.int64}          | ${Runtime.Int64Array}     | ${8}
   ${"Nativeint"}      | ${Types.nativeint}      | ${Runtime.Int32Array}     | ${4}
   ${"Char"}           | ${Types.$$char}         | ${Runtime.Uint8Array}     | ${1}
-`("array of $label", ({ label, kind, constructor, size }) => {
+`("array of $label", ({ kind, constructor, size }) => {
   test.each`
     layout_desc  | layout                  | dim_n | len    | dim             | a_dim
     ${"c"}       | ${Types.c_layout}       | ${1}  | ${10}  | ${[10]}         | ${[1]}
@@ -116,7 +110,7 @@ describe.each`
     ${"c"}       | ${Types.c_layout}       | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[36, 12, 6, 1]}
     ${"fortran"} | ${Types.fortran_layout} | ${1}  | ${10}  | ${[10]}         | ${[1]}
     ${"fortran"} | ${Types.fortran_layout} | ${0}  | ${1}   | ${[]}           | ${[]}
-    ${"fortran"} | ${Types.fortran_layout} | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[1, 5, 15, 30]}
+    ${"fortran"} | ${Types.fortran_layout} | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[30, 15, 5, 1]}
   `(
     "$layout_desc-layout constructor with dim $dim_n",
     ({ layout, len, dim, a_dim }) => {
@@ -124,10 +118,10 @@ describe.each`
 
       expect(array.buffer).toBeInstanceOf(constructor);
       expect(array.buffer.length).toBe(len);
-      expect(array.layout).toBe(layout);
-      expect(array.kind).toBe(kind);
+      expect(Genarray.layout(array)).toBe(layout);
+      expect(Genarray.kind(array)).toBe(kind);
       expect(Genarray.size_in_bytes(array)).toBe(size * len);
-      expect(array.a_dims).toStrictEqual(a_dim);
+      expect(array.range).toStrictEqual(a_dim);
     }
   );
 
@@ -151,7 +145,7 @@ describe.each`
     dim_n | dim             | a_dim_c           | a_dim_fortran
     ${0}  | ${[]}           | ${[]}             | ${[]}
     ${1}  | ${[10]}         | ${[1]}            | ${[1]}
-    ${4}  | ${[5, 3, 2, 6]} | ${[36, 12, 6, 1]} | ${[1, 5, 15, 30]}
+    ${4}  | ${[5, 3, 2, 6]} | ${[36, 12, 6, 1]} | ${[30, 15, 5, 1]}
   `(
     "layout conversion in dimension-$dim_n",
     ({ dim, a_dim_c, a_dim_fortran }) => {
@@ -163,25 +157,25 @@ describe.each`
         );
         expect(fortran_array).not.toBe(c_array);
         expect(fortran_array.layout).toBe(Types.fortran_layout);
-        expect(fortran_array.a_dims).toStrictEqual(a_dim_fortran);
+        expect(fortran_array.range).toStrictEqual(a_dim_c);
         expect(fortran_array.buffer).toBe(c_array.buffer);
       });
 
       test("c -> c", () => {
         const c_array = Genarray.create(kind, Types.c_layout, dim);
         const c_array_2 = Genarray.change_layout(c_array, Types.c_layout);
-        expect(c_array_2).not.toBe(c_array);
+        expect(c_array_2).toBe(c_array);
         expect(c_array_2.layout).toBe(Types.c_layout);
-        expect(c_array_2.a_dims).toStrictEqual(a_dim_c);
+        expect(c_array_2.range).toStrictEqual(a_dim_c);
         expect(c_array_2.buffer).toBe(c_array.buffer);
       });
 
-      test("c -> fortran", () => {
+      test("fortran -> c", () => {
         const fortran_array = Genarray.create(kind, Types.fortran_layout, dim);
         const c_array = Genarray.change_layout(fortran_array, Types.c_layout);
         expect(c_array).not.toBe(fortran_array);
         expect(c_array.layout).toBe(Types.c_layout);
-        expect(c_array.a_dims).toStrictEqual(a_dim_c);
+        expect(c_array.range).toStrictEqual(a_dim_fortran);
         expect(c_array.buffer).toBe(fortran_array.buffer);
       });
 
@@ -191,9 +185,9 @@ describe.each`
           fortran_array,
           Types.fortran_layout
         );
-        expect(fortran_array_2).not.toBe(fortran_array);
+        expect(fortran_array_2).toBe(fortran_array);
         expect(fortran_array_2.layout).toBe(Types.fortran_layout);
-        expect(fortran_array_2.a_dims).toStrictEqual(a_dim_fortran);
+        expect(fortran_array_2.range).toStrictEqual(a_dim_fortran);
         expect(fortran_array_2.buffer).toBe(fortran_array.buffer);
       });
     }
@@ -235,26 +229,12 @@ describe.each`
     });
 
     test("fortran getter", () => {
-      /*
-      [ [ [ 0, 1 ]
-          [ 2, 3 ]
-          [ 4, 5 ] ],
-        [ [ 6, 7 ],
-          [ 8, 9 ],
-          [ 10, 11 ] ],
-        [ [ 12, 13 ],
-          [ 14, 15 ],
-          [ 16, 17 ] ],
-        [ [ 18, 19 ],
-          [ 20, 21 ],
-          [ 22, 23 ] ] ]
-      */
       const f_array = Genarray.change_layout(array, Types.fortran_layout);
       expect(Genarray.get(f_array, [1, 1, 1])).toStrictEqual(_64(f_array, 0));
-      expect(Genarray.get(f_array, [1, 1, 2])).toStrictEqual(_64(f_array, 6));
-      expect(Genarray.get(f_array, [1, 2, 1])).toStrictEqual(_64(f_array, 2));
       expect(Genarray.get(f_array, [2, 1, 1])).toStrictEqual(_64(f_array, 1));
-      expect(Genarray.get(f_array, [2, 3, 4])).toStrictEqual(_64(f_array, 23));
+      expect(Genarray.get(f_array, [1, 2, 1])).toStrictEqual(_64(f_array, 4));
+      expect(Genarray.get(f_array, [1, 1, 2])).toStrictEqual(_64(f_array, 12));
+      expect(Genarray.get(f_array, [4, 3, 2])).toStrictEqual(_64(f_array, 23));
     });
 
     test("c setter", () => {
@@ -275,15 +255,15 @@ describe.each`
     test("fortran setter", () => {
       const f_array = Genarray.change_layout(array, Types.fortran_layout);
       Genarray.set(f_array, [1, 1, 1], __64(f_array, 201));
-      Genarray.set(f_array, [1, 1, 2], __64(f_array, 202));
+      Genarray.set(f_array, [2, 1, 1], __64(f_array, 202));
       Genarray.set(f_array, [1, 2, 1], __64(f_array, 203));
-      Genarray.set(f_array, [2, 1, 1], __64(f_array, 204));
-      Genarray.set(f_array, [2, 3, 4], __64(f_array, 205));
+      Genarray.set(f_array, [1, 1, 2], __64(f_array, 204));
+      Genarray.set(f_array, [4, 3, 2], __64(f_array, 205));
 
       expect(f_array.buffer.at(0)).toStrictEqual(__64_(f_array, 201));
-      expect(f_array.buffer.at(1)).toStrictEqual(__64_(f_array, 204));
-      expect(f_array.buffer.at(2)).toStrictEqual(__64_(f_array, 203));
-      expect(f_array.buffer.at(6)).toStrictEqual(__64_(f_array, 202));
+      expect(f_array.buffer.at(1)).toStrictEqual(__64_(f_array, 202));
+      expect(f_array.buffer.at(4)).toStrictEqual(__64_(f_array, 203));
+      expect(f_array.buffer.at(12)).toStrictEqual(__64_(f_array, 204));
       expect(f_array.buffer.at(17)).toStrictEqual(__64_(f_array, 17));
       expect(f_array.buffer.at(23)).toStrictEqual(__64_(f_array, 205));
     });

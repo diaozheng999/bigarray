@@ -11,6 +11,7 @@ const Int64Array = MakeStruct({
     return value[0];
   },
   creator: Int32Array,
+  kind: 10,
 });
 
 export default Int64Array;

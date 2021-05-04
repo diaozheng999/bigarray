@@ -5,9 +5,10 @@ export interface Pack<T, U> {
   pack0(value: T): U;
   pack1(value: T): U;
   creator: TypedArrayConstructor<U>;
+  kind: number;
 }
 
-export function MakeStruct<T, U>({unpack, pack0, pack1, creator}: Pack<T, U>) {
+export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, U>) {
   return class Struct implements TypedArray<T> {
     static BYTES_PER_ELEMENT = creator.BYTES_PER_ELEMENT * 2;
     static get [Symbol.species]() {
@@ -18,6 +19,8 @@ export function MakeStruct<T, U>({unpack, pack0, pack1, creator}: Pack<T, U>) {
     readonly byteOffset: number;
     readonly buffer: ArrayBufferLike;
     readonly length: number;
+    readonly kind = kind;
+    readonly BYTES_PER_ELEMENT = Struct.BYTES_PER_ELEMENT;
 
     view: TypedArray<U>;
 

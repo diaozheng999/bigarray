@@ -1,11 +1,12 @@
 import { TypedArray } from "./TypedArray";
 
-export default class Float32TypedArray
-  extends Float32Array
+export default class Int8TypedArray
+  extends Int8Array
   implements TypedArray<number> {
   static get [Symbol.species]() {
-    return Float32TypedArray;
+    return Int8TypedArray;
   }
+  readonly kind = 0;
   at(idx: number) {
     return this[idx];
   }

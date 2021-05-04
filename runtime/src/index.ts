@@ -1,23 +1,41 @@
-import Complex32Array from "./Complex32Array";
-import Complex64Array from "./Complex64Array";
-import Float32Array from "./Float32Array";
-import Float64Array from "./Float64Array";
-import Int16Array from "./Int16Array";
-import Int32Array from "./Int32Array";
-import Int64Array from "./Int64Array";
-import Int8Array from "./Int8Array";
-import Uint16Array from "./Uint16Array";
-import Uint8Array from "./Uint8Array";
+import { C } from "./C";
+import { typed } from "./drivers";
+import { Fortran } from "./fortran";
 
 export {
+  CharArray,
   Complex32Array,
   Complex64Array,
   Float32Array,
   Float64Array,
-  Int8Array,
   Int16Array,
   Int32Array,
   Int64Array,
-  Uint8Array,
+  Int8Array,
+  IntArray,
+  NativeintArray,
   Uint16Array,
-};
+  Uint8Array,
+} from "./drivers";
+
+export { C, Fortran }
+
+const wrappers: typeof C[] = [C, Fortran];
+
+export function create(kind: number, layout: number, dims: number[]) {
+  let n = 1;
+  let l = dims.length;
+  for (let i = 0; i < l; ++i) {
+    n *= dims[i];
+  }
+
+  const buffer = new typed[kind](n);
+  return new wrappers[layout](buffer, dims);
+}
+
+export function changeLayout<T>(item: C<T>, layout: number) {
+  if (layout !== item.layout) {
+    return new wrappers[layout](item.buffer, item.dimensions, item.range);
+  }
+  return item;
+}

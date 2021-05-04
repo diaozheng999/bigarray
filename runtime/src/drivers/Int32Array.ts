@@ -1,10 +1,11 @@
 import { TypedArray } from "./TypedArray";
 
-export default class Float64TypedArray
-  extends Float64Array
+export default class Int32TypedArray
+  extends Int32Array
   implements TypedArray<number> {
+  readonly kind: number = 6
   static get [Symbol.species]() {
-    return Float64TypedArray;
+    return Int32TypedArray;
   }
   at(idx: number) {
     return this[idx];
