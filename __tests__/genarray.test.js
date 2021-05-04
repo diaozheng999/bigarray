@@ -3,6 +3,48 @@ const Types = require("../lib/js/src/types.bs");
 
 const Runtime = require("@nasi/bigarray-runtime");
 
+/**
+ * @typedef {{
+ *  buffer: require("@nasi/bigarray-runtime/lib/TypedArray").TypedArray<number>;
+ *  layout: number;
+ *  kind: number;
+ *  dims: number[];
+ *  a_dims: number[];
+ * }} t
+ */
+
+/**
+ * Fixes array indices for both
+ * @param {t} array
+ * @param {number[]} idx
+ */
+function _l(array, idx) {
+  if (array.layout) {
+    let n_array = [];
+    for (let i = idx.length - 1; i >= 0; --i) {
+      n_array.push(idx[i] + 1);
+    }
+    return n_array;
+  }
+  return idx;
+}
+
+/**
+ * Fixes array indices for both
+ * @param {number} layout
+ * @param {number[]} idx
+ */
+function _dim(layout, idx) {
+  if (layout) {
+    let n_array = [];
+    for (let i = idx.length - 1; i >= 0; --i) {
+      n_array.push(idx[i]);
+    }
+    return n_array;
+  }
+  return idx;
+}
+
 function _64(array, n) {
   switch (array.kind) {
     case Types.int64:
@@ -45,9 +87,9 @@ function __64(array, n) {
   }
 }
 
-function fill(array, n) {
+function fill(array, n, v) {
   for (let i = 0; i < n; ++i) {
-    array.buffer.setValue(i, __64_(array, i));
+    array.buffer.setValue(i, __64_(array, v || i));
   }
 }
 
@@ -70,10 +112,10 @@ describe.each`
   test.each`
     layout_desc  | layout                  | dim_n | len    | dim             | a_dim
     ${"c"}       | ${Types.c_layout}       | ${1}  | ${10}  | ${[10]}         | ${[1]}
-    ${"c"}       | ${Types.c_layout}       | ${0}  | ${0}   | ${[]}           | ${[]}
+    ${"c"}       | ${Types.c_layout}       | ${0}  | ${1}   | ${[]}           | ${[]}
     ${"c"}       | ${Types.c_layout}       | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[36, 12, 6, 1]}
     ${"fortran"} | ${Types.fortran_layout} | ${1}  | ${10}  | ${[10]}         | ${[1]}
-    ${"fortran"} | ${Types.fortran_layout} | ${0}  | ${0}   | ${[]}           | ${[]}
+    ${"fortran"} | ${Types.fortran_layout} | ${0}  | ${1}   | ${[]}           | ${[]}
     ${"fortran"} | ${Types.fortran_layout} | ${4}  | ${180} | ${[5, 3, 2, 6]} | ${[1, 5, 15, 30]}
   `(
     "$layout_desc-layout constructor with dim $dim_n",
@@ -92,10 +134,10 @@ describe.each`
   test.each`
     layout_desc  | layout                  | dim_n | len    | dim
     ${"c"}       | ${Types.c_layout}       | ${1}  | ${10}  | ${[10]}
-    ${"c"}       | ${Types.c_layout}       | ${0}  | ${0}   | ${[]}
+    ${"c"}       | ${Types.c_layout}       | ${0}  | ${1}   | ${[]}
     ${"c"}       | ${Types.c_layout}       | ${4}  | ${180} | ${[5, 3, 2, 6]}
     ${"fortran"} | ${Types.fortran_layout} | ${1}  | ${10}  | ${[10]}
-    ${"fortran"} | ${Types.fortran_layout} | ${0}  | ${0}   | ${[]}
+    ${"fortran"} | ${Types.fortran_layout} | ${0}  | ${1}   | ${[]}
     ${"fortran"} | ${Types.fortran_layout} | ${4}  | ${180} | ${[5, 3, 2, 6]}
   `(
     "$layout_desc-layout constructor with dim $dim_n",
@@ -164,6 +206,12 @@ describe.each`
       fill(array, 24);
     });
 
+    test("c getter 0-dim", () => {
+      const array = Genarray.create(kind, Types.c_layout, []);
+      fill(array, 1, 10);
+      expect(Genarray.get(array, [])).toStrictEqual(_64(array, 10));
+    });
+
     test("c getter", () => {
       /*
       [ [ [0, 1, 2, 3],
@@ -178,6 +226,12 @@ describe.each`
       expect(Genarray.get(array, [0, 1, 0])).toStrictEqual(_64(array, 4));
       expect(Genarray.get(array, [1, 0, 0])).toStrictEqual(_64(array, 12));
       expect(Genarray.get(array, [1, 2, 3])).toStrictEqual(_64(array, 23));
+    });
+
+    test("fortran getter 0-dim", () => {
+      const array = Genarray.create(kind, Types.fortran_layout, []);
+      fill(array, 1, 10);
+      expect(Genarray.get(array, [])).toStrictEqual(_64(array, 10));
     });
 
     test("fortran getter", () => {
@@ -296,6 +350,49 @@ describe.each`
           Genarray.get(array, [4, 1, 2])
         );
       }
+    });
+  });
+
+  describe.each`
+    label             | layout            | slice
+    ${"c slice_left"} | ${Types.c_layout} | ${"slice_left"}
+  `("$label", ({ layout, slice }) => {
+    test("slicing 0 dimensions", () => {
+      const array = Genarray.create(kind, layout, []);
+      const sliced = Genarray[slice](array, []);
+      expect(Genarray.size_in_bytes(sliced)).toBe(size);
+      Genarray.set(sliced, [], __64_(sliced, 107));
+      expect(Genarray.get(array, [])).toStrictEqual(__64(array, 107));
+    });
+
+    test("slicing empty dimension", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [3, 4, 5]));
+      const sliced = Genarray[slice](array, []);
+      expect(Genarray.size_in_bytes(sliced)).toBe(60 * size);
+      Genarray.set(sliced, _l(sliced, [0, 1, 2]), __64_(sliced, 117));
+      expect(Genarray.get(array, _l(array, [0, 1, 2]))).toStrictEqual(
+        __64(array, 117)
+      );
+    });
+
+    test("slicing all dimensions", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [3, 4, 5]));
+      const sliced = Genarray[slice](array, _l(array, [0, 1, 2]));
+      Genarray.set(sliced, [], __64_(sliced, 117));
+      expect(Genarray.size_in_bytes(sliced)).toBe(size);
+      expect(Genarray.get(array, _l(array, [0, 1, 2]))).toStrictEqual(
+        __64(array, 117)
+      );
+    });
+
+    test("slicing some dimensions", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [3, 4, 5]));
+      const sliced = Genarray[slice](array, _l(array, [0, 1]));
+      Genarray.set(sliced, _l(array, [2]), __64_(sliced, 117));
+      expect(Genarray.size_in_bytes(sliced)).toBe(5 * size);
+      expect(Genarray.get(array, _l(array, [0, 1, 2]))).toStrictEqual(
+        __64(array, 117)
+      );
     });
   });
 });

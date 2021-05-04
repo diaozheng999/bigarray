@@ -77,11 +77,7 @@ let accumulate_dims = (dims, layout) => {
   }
 }
 
-let compute_size = dims =>
-  switch Js.Array2.length(dims) {
-  | 0 => 0
-  | _ => Js.Array2.reduce(dims, (a, b) => a * b, 1)
-  }
+let compute_size = dims => Js.Array2.reduce(dims, (a, b) => a * b, 1)
 
 let create = (kind, layout, dims) => {
   let size = compute_size(dims)
@@ -206,5 +202,51 @@ let sub_right = ({buffer, kind, layout, a_dims, dims}, ofs, len) => {
     layout: layout,
     dims: dims,
     a_dims: a_dims,
+  }
+}
+
+let rec next_c = (dims, idx, current_dim) => {
+  if current_dim === 0 {
+    Js.Array2.unsafe_set(idx, 0, Js.Array2.unsafe_get(idx, current_dim) + 1)
+  } else {
+    let n = Js.Array2.unsafe_get(dims, current_dim)
+    let k = Js.Array2.unsafe_get(idx, current_dim) + 1
+    if k < n {
+      Js.Array2.unsafe_set(idx, current_dim, k)
+    } else {
+      Js.Array2.unsafe_set(idx, current_dim, 0)
+      next_c(dims, idx, current_dim - 1)
+    }
+  }
+}
+
+let compute_first_last_of = (dims, fix) => {
+  let start = Array.make(Js.Array2.length(dims), 0)
+  Js.Array2.forEachi(fix, (v, i) => Js.Array2.unsafe_set(start, i, v))
+  let end_idx = Js.Array2.length(fix) - 1
+  let end = Js.Array2.copy(start)
+  next_c(dims, end, end_idx)
+  (start, end)
+}
+
+let slice_left = (array, fix) => {
+  let fixed_len = Js.Array2.length(fix)
+  if fixed_len == 0 {
+    array
+  } else if fixed_len > Js.Array2.length(array.dims) {
+    invalid_arg("Cannot slice a higher dimension than existing.")
+  } else {
+    let (begin, end) = compute_first_last_of(array.dims, fix)
+    let begin = compute_idx_unsafe(array, begin)
+    let end = compute_idx_unsafe(array, end)
+    let a_dims = Js.Array2.sliceFrom(array.a_dims, fixed_len)
+    let dims = Js.Array2.sliceFrom(array.dims, fixed_len)
+    {
+      buffer: subarray(array.buffer, ~begin, ~end),
+      kind: array.kind,
+      layout: array.layout,
+      dims: dims,
+      a_dims: a_dims,
+    }
   }
 }

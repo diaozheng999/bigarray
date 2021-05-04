@@ -2,11 +2,12 @@ import { TypedArray, TypedArrayConstructor } from "./TypedArray";
 
 export interface Pack<T, U> {
   unpack(lo: U, hi: U): T;
-  pack(value: T): readonly [U, U];
+  pack0(value: T): U;
+  pack1(value: T): U;
   creator: TypedArrayConstructor<U>;
 }
 
-export function MakeStruct<T, U>({unpack, pack, creator}: Pack<T, U>) {
+export function MakeStruct<T, U>({unpack, pack0, pack1, creator}: Pack<T, U>) {
   return class Struct implements TypedArray<T> {
     static BYTES_PER_ELEMENT = creator.BYTES_PER_ELEMENT * 2;
     static get [Symbol.species]() {
@@ -74,9 +75,9 @@ export function MakeStruct<T, U>({unpack, pack, creator}: Pack<T, U>) {
     }
 
     setValue(idx: number, value: T) {
-      const packed = pack(value);
       const i = idx << 1;
-      this.view.set(packed, i);
+      this.view.setValue(i, pack0(value));
+      this.view.setValue(i + 1, pack1(value));
     }
 
   }

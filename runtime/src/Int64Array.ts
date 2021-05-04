@@ -4,8 +4,11 @@ import { MakeStruct } from "./TwoElementStructArray";
 
 const Int64Array = MakeStruct({
   unpack: mk,
-  pack([hi, lo]: int64) {
-    return [lo, hi];
+  pack0(value: int64) {
+    return value[1];
+  },
+  pack1(value: int64) {
+    return value[0];
   },
   creator: Int32Array,
 });

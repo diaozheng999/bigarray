@@ -10,11 +10,12 @@ const Complex64Array = MakeStruct({
   unpack(re: number, im: number) {
     return { re, im };
   },
-
-  pack({ re, im }: Complex) {
-    return [re, im];
+  pack0({ re }: Complex) {
+    return re;
   },
-
+  pack1({ im }: Complex) {
+    return im;
+  },
   creator: Float64Array,
 });
 
