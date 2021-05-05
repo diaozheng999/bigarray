@@ -9,6 +9,8 @@ export class C<T> {
 
   readonly layout: number = 0;
 
+  readonly length: number;
+
   ctor = C;
 
   constructor(
@@ -22,6 +24,22 @@ export class C<T> {
     if (!range) {
       dimensions.reduceRight(this.dimensionReducer, 1);
     }
+    this.length = buffer.length;
+  }
+
+  assertDimension(n: number) {
+    if (this.dimensions.length !== n) {
+      invalid_arg("Dimension mismatch.");
+    }
+    return this;
+  }
+
+  reshape(...dims: number[]) {
+    const length = dims.reduceRight(this.dimensionReducer, 1);
+    if (length !== this.length) {
+      invalid_arg("Dimension mismatch");
+    }
+    return new this.ctor(this.buffer, dims);
   }
 
   byteSize() {
@@ -118,6 +136,13 @@ export class C<T> {
     this.buffer.setValue(idx, v);
   }
 
+  sub1(ofs: number, len: number) {
+    if (!this.dimensions.length || ofs < 0 || ofs + len > this.dimensions[0]) {
+      invalid_arg("Range out of bounds.");
+    }
+    return new this.ctor(this.buffer.subarray(ofs, ofs + len), [len], [1]);
+  }
+
   sub(ofs: number, len: number) {
     if (!this.dimensions.length || ofs < 0 || ofs + len > this.dimensions[0]) {
       invalid_arg("Range out of bounds.");
@@ -136,6 +161,26 @@ export class C<T> {
       newDimension,
       this.range,
     );
+  }
+
+  slice1(n: number) {
+    this.validateRange(n, 0);
+    return new this.ctor(this.buffer.subarray(n, n + 1), [], []);
+  }
+
+  slice2(n: number) {
+    this.validateRange(n, 0);
+    const len = this.range[0];
+    const begin = len * n;
+    return new this.ctor(
+      this.buffer.subarray(begin, len + begin),
+      [this.dimensions[1]],
+      [1],
+    );
+  }
+
+  sliceVariadic(...dims: number[]) {
+    return this.slice(dims);
   }
 
   slice(dims: number[]) {
@@ -161,6 +206,10 @@ export class C<T> {
       this.dimensions.slice(fixedLength),
       this.range.slice(fixedLength),
     );
+  }
+
+  blitArray(other: ArrayLike<T>) {
+    this.buffer.set(other);
   }
 
   blit(other: C<T>) {

@@ -82,6 +82,14 @@ export class Fortran<T> extends C<T> {
     return super.unsafeSet3(k - 1, j - 1, i - 1, v);
   }
 
+  slice1(n: number) {
+    return super.slice1(n - 1);
+  }
+
+  slice2(n: number) {
+    return super.slice2(n - 1);
+  }
+
   slice(dims: number[]) {
     return super.slice(this.rotate(dims));
   }
