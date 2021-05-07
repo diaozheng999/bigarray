@@ -3,77 +3,11 @@ const Types = require("../lib/js/src/types.bs");
 
 const Runtime = require("@nasi/bigarray-runtime");
 
-/**
- * Fixes array indices for both
- */
-function _l(array, idx) {
-  if (array.layout) {
-    let n_array = [];
-    for (let i = idx.length - 1; i >= 0; --i) {
-      n_array.push(idx[i] + 1);
-    }
-    return n_array;
-  }
-  return idx;
-}
 
-/**
- * Fixes array indices for both
- * @param {number} layout
- * @param {number[]} idx
- */
-function _dim(layout, idx) {
-  if (layout) {
-    let n_array = [];
-    for (let i = idx.length - 1; i >= 0; --i) {
-      n_array.push(idx[i]);
-    }
-    return n_array;
-  }
-  return idx;
-}
+const {
+  compat: { _l, _dim, _64, __64_, __64 },
+} = require("@nasi/bigarray-runtime/lib/TestingLibrary");
 
-function _64(array, n) {
-  switch (array.kind) {
-    case Types.int64:
-      return [0, n];
-    case Types.complex32:
-    case Types.complex64:
-      return { re: n, im: 0 };
-    default:
-      return n;
-  }
-}
-
-function __64_(array, n) {
-  switch (array.kind) {
-    case Types.int64:
-      return [0, n >>> 0];
-    case Types.int8_signed:
-      if (n > 127) {
-        return -256 + n;
-      }
-      return n;
-    case Types.complex32:
-    case Types.complex64:
-      return { re: n, im: 0 };
-    default:
-      return n;
-  }
-}
-
-function __64(array, n) {
-  switch (array.kind) {
-    case Types.int64:
-      return [0, n >>> 0];
-
-    case Types.complex32:
-    case Types.complex64:
-      return { re: n, im: 0 };
-    default:
-      return n;
-  }
-}
 
 /**
  *

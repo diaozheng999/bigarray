@@ -4,7 +4,7 @@ import { create } from ".";
 function rotateForFortran(idx: number[]) {
   const n = [];
   for (let i = idx.length - 1; i >= 0; --i) {
-    n.push(i + 1);
+    n.push(idx[i] + 1);
   }
   return n;
 }
@@ -12,7 +12,7 @@ function rotateForFortran(idx: number[]) {
 function rotateDimensionForFortran(idx: number[]) {
   const n = [];
   for (let i = idx.length - 1; i >= 0; --i) {
-    n.push(i + 1);
+    n.push(idx[i]);
   }
   return n;
 }
@@ -30,7 +30,7 @@ function wrapFloat(value: number, min: number, max: number) {
   if (isNaN(value)) {
     return NaN;
   }
-  if (value > 0) {
+  if (value >= 0) {
     if (value < min) {
       return 0;
     }
@@ -82,7 +82,7 @@ function unpackValue(array: C<unknown>, value: any, wrap = true) {
       if (wrap) {
         return wrapFloat(value, 1.175494351e-38, 3.402823466e38);
       }
-      return wrap;
+      return value;
     case 9:
       return {
         re: wrap ? wrapFloat(value, 1.175494351e-38, 3.402823466e38) : value,
@@ -147,14 +147,20 @@ export function build(
   kind: number,
   layout: number,
   dimensions: number[],
-  fill: Iterable<unknown> | ArrayLike<unknown>,
+  fill: number | Iterable<unknown> | ArrayLike<unknown>,
 ) {
   const value = create(
     kind,
     layout,
     layout ? rotateDimensionForFortran(dimensions) : dimensions,
   );
-  value.blitArray(Array.from(fill));
+  if (typeof fill === "number") {
+    for (let i = 0; i < fill; ++i) {
+      value.buffer.setValue(i, unpackValue(i, 0));
+    }
+  } else {
+    value.blitArray(Array.from(fill));
+  }
   return value;
 }
 
