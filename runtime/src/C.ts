@@ -198,7 +198,7 @@ export class C<T> {
     }
     const start = begin.reduce(this.accumulator, 0);
     const end = this.getNextIdxInPlace(begin, fixedLength).reduce(
-      this.accumulator,
+      this.unsafeAccumulator,
       0,
     );
     return new this.ctor(
@@ -235,6 +235,9 @@ export class C<T> {
     this.validateRange(v, i);
     return acc + this.range[i] * v;
   };
+
+  unsafeAccumulator = (acc: number, v: number, i: number) =>
+    acc + this.range[i] * v;
 
   getNextIdxInPlace = (idx: number[], digit: number) => {
     for (let i = digit - 1; i >= 0; --i) {

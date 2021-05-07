@@ -16,8 +16,8 @@ export interface TypedArray<T> {
   readonly length: number;
   readonly BYTES_PER_ELEMENT: number;
   at(idx: number): T;
-  subarray(begin?: number, end?: number): TypedArray<T>;
-  set(array: ArrayLike<T> | TypedArray<T>, offset?: number): void;
+  subarray(begin: number, end: number): TypedArray<T>;
+  set(array: ArrayLike<T> | TypedArray<T>): void;
   setValue(idx: number, value: T): void;
   fill(value: T): void;
 }

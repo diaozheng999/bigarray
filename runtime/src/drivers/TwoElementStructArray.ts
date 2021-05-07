@@ -61,19 +61,21 @@ export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, 
       return unpack(lo, hi);
     }
 
-    subarray(begin?: number, end?: number) {
-      const start = begin || 0;
+    subarray(begin: number, end: number) {
+      const start = begin;
       const byteOffset = creator.BYTES_PER_ELEMENT * (start << 1);
-      const length = (end || this.length) - start;
+      const length = end - start;
       return new Struct(this.buffer, byteOffset + this.byteOffset, length);
     }
 
-    set(array: any, offset?: number) {
-      const ofs = offset ? offset << 1 : 0;
+    set(array: any) {
       if (typeof array.view !== "undefined") {
-        this.view.set(array.view, ofs);
+        this.view.set(array.view);
       } else {
-        throw TypeError("Cannot set an array of different type.");
+        const len = array.length;
+        for (let i = 0; i < len; ++i) {
+          this.setValue(i, array[i]);
+        }
       }
     }
 

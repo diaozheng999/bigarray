@@ -376,4 +376,80 @@ describe.each`
       );
     });
   });
+
+  describe.each`
+    label        | layout                  | d
+    ${"c"}       | ${Types.c_layout}       | ${"left"}
+    ${"fortran"} | ${Types.fortran_layout} | ${"right"}
+  `("$label layout fill", ({ layout, d }) => {
+    test("fill normally", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [2, 3, 4]));
+      Genarray.fill(array, __64_(array, 107));
+      const res = __64(array, 107);
+      for (let i = 0; i < 24; ++i) {
+        expect(array.buffer.at(i)).toStrictEqual(res);
+      }
+    });
+    test("fill sub", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [2, 3, 4]));
+      const sub = Genarray[`sub_${d}`](array, 0, 1);
+      Genarray.fill(array, __64_(array, 2));
+      Genarray.fill(sub, __64_(array, 107));
+      const res0 = __64(array, 2);
+      const res1 = __64(array, 107);
+
+      expect(Genarray.get(array, _l(array, [0, 0, 0]))).toStrictEqual(res1);
+      expect(Genarray.get(array, _l(array, [1, 0, 0]))).toStrictEqual(res0);
+    });
+
+    test("fill slice", () => {
+      const array = Genarray.create(kind, layout, _dim(layout, [2, 3, 4]));
+      const sub = Genarray[`slice_${d}`](array, _l(array, [1, 1]));
+      Genarray.fill(array, __64_(array, 2));
+      Genarray.fill(sub, __64_(array, 107));
+      const res0 = __64(array, 2);
+      const res1 = __64(array, 107);
+
+      expect(Genarray.get(array, _l(array, [0, 0, 0]))).toStrictEqual(res0);
+      expect(Genarray.get(array, _l(array, [1, 0, 0]))).toStrictEqual(res0);
+      expect(Genarray.get(array, _l(array, [1, 1, 0]))).toStrictEqual(res1);
+      expect(Genarray.get(array, _l(array, [1, 1, 3]))).toStrictEqual(res1);
+      expect(Genarray.get(array, _l(array, [1, 2, 0]))).toStrictEqual(res0);
+      expect(Genarray.get(array, _l(array, [1, 2, 3]))).toStrictEqual(res0);
+    });
+  });
+  describe.each`
+    label        | layout                  | d
+    ${"c"}       | ${Types.c_layout}       | ${"left"}
+    ${"fortran"} | ${Types.fortran_layout} | ${"right"}
+  `("$label layout blit", ({ layout, d }) => {
+    test("blit diff 0-dim", () => {
+      const a = Genarray.create(kind, layout, []);
+      const b = Genarray.create(kind, layout, []);
+      Genarray.fill(a, __64_(a, 117));
+      Genarray.blit(b, a);
+      expect(Genarray.get(b, [])).toStrictEqual(__64(b, 117));
+    });
+
+    test("blit slice", () => {
+      const a = Genarray.create(kind, layout, _dim(layout, [2, 3, 4]));
+      const row = Genarray.create(kind, layout, _dim(layout, [3, 4]));
+      const slice0 = Genarray[`slice_${d}`](a, _l(a, [0]));
+      Genarray.fill(row, __64_(row, 107));
+      Genarray.blit(slice0, row);
+      const slice1 = Genarray[`slice_${d}`](a, _l(a, [1]));
+      Genarray.fill(row, __64_(row, 117));
+      Genarray.blit(slice1, row);
+
+      const res0 = __64(row, 107);
+      const res1 = __64(row, 117);
+
+      expect(Genarray.get(a, _l(a, [0, 0, 0]))).toStrictEqual(res0);
+      expect(Genarray.get(a, _l(a, [0, 1, 2]))).toStrictEqual(res0);
+      expect(Genarray.get(a, _l(a, [0, 2, 3]))).toStrictEqual(res0);
+      expect(Genarray.get(a, _l(a, [1, 0, 0]))).toStrictEqual(res1);
+      expect(Genarray.get(a, _l(a, [1, 1, 2]))).toStrictEqual(res1);
+      expect(Genarray.get(a, _l(a, [1, 2, 3]))).toStrictEqual(res1);
+    });
+  });
 });

@@ -7,3 +7,4 @@ _opam
 **/*.bs.js
 **/_ppx
 **/node_modules
+coverage
