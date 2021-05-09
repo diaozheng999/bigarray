@@ -1,5 +1,5 @@
-import { C } from "./C";
 import { create } from ".";
+import { C } from "./C";
 
 function rotateForFortran(idx: number[]) {
   const n = [];
@@ -131,12 +131,21 @@ function expectation(array: C<unknown>, value: number) {
 }
 
 function printResult(array: C<unknown>, value: any) {
+  if (typeof value === "undefined") {
+    return `<undefined>`;
+  }
   switch (array.buffer.kind) {
     case 10:
+      if (typeof value[0] === "undefined") {
+        return `<undefined>`;
+      }
       const p = (BigInt(value[0]) << BigInt(32)) | BigInt(value[1]);
       return `${p}`;
     case 9:
     case 12:
+      if (typeof value.re === "undefined") {
+        return `<undefined>`;
+      }
       return `${value.re} + ${value.im}i`;
     default:
       return `${value}`;
@@ -156,7 +165,7 @@ export function build(
   );
   if (typeof fill === "number") {
     for (let i = 0; i < fill; ++i) {
-      value.buffer.setValue(i, unpackValue(i, 0));
+      value.buffer.setValue(i, unpackValue(value, 0));
     }
   } else {
     value.blitArray(Array.from(fill));
@@ -173,6 +182,17 @@ expect.extend({
       pass,
       message: () =>
         `expect array[${rotated.join(",")}] ${not(pass)}to be ${expectation(
+          array,
+          value,
+        )}. Received ${printResult(array, value)}.`,
+    };
+  },
+  toHaveValueOf(expected: unknown, array: C<unknown>, value: number) {
+    const pass = compareValue(array, expected, value);
+    return {
+      pass,
+      message: () =>
+        `expect value ${not(pass)}to be ${expectation(
           array,
           value,
         )}. Received ${printResult(array, value)}.`,
