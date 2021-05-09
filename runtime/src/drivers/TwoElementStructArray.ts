@@ -8,7 +8,13 @@ export interface Pack<T, U> {
   kind: number;
 }
 
-export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, U>) {
+export function MakeStruct<T, U>({
+  unpack,
+  pack0,
+  pack1,
+  creator,
+  kind,
+}: Pack<T, U>) {
   return class Struct implements TypedArray<T> {
     static BYTES_PER_ELEMENT = creator.BYTES_PER_ELEMENT * 2;
     static get [Symbol.species]() {
@@ -35,7 +41,11 @@ export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, 
         this.view = this.construct(arg0);
         this.length = arg0;
       } else {
-        this.view = this.constructWithBuffer(arg0, byteOffset || 0, length || 0);
+        this.view = this.constructWithBuffer(
+          arg0,
+          byteOffset || 0,
+          length || 0,
+        );
         this.length = length || 0;
       }
       this.byteLength = this.view.byteLength;
@@ -93,5 +103,5 @@ export function MakeStruct<T, U>({unpack, pack0, pack1, creator, kind}: Pack<T, 
         this.view.setValue(i + 1, odd);
       }
     }
-  }
+  };
 }

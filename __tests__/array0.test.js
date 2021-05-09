@@ -26,16 +26,63 @@ describe.each`
     ${"fortran"} | ${Types.fortran_layout} | ${"right"}
   `("layout $label", ({ layout }) => {
     test("create", () => {
-      let array = Array0.create(kind, layout);
-      expect(array.kind).toBe(kind);
+      const array = Array0.create(kind, layout);
+      expect(Array0.kind(array)).toBe(kind);
       expect(Array0.size_in_bytes(array)).toBe(size);
-      expect(array.layout).toBe(layout);
+      expect(Array0.layout(array)).toBe(layout);
     });
 
     test("get", () => {
-      let array = T.build(kind, layout, [], [192]);
-      expect(Array0.get(array)).toHaveValueOf(array, 192);
+      const array = T.build(kind, layout, [], [192]);
+      expect(Array0.get(array)).toHaveWrappedValueOf(array, 192);
     });
 
+    test("set", () => {
+      const array = Array0.create(kind, layout);
+      Array0.set(array, T.unpackValue(array, 107, false));
+      expect(array).toHaveValueAt([], 107);
+    });
+
+    test("blit", () => {
+      const array = Array0.create(kind, layout);
+      const blitter = T.build(kind, layout, [], [103]);
+      Array0.blit(array, blitter);
+      expect(array).toHaveValueAt([], 103);
+    });
+
+    test("blit self", () => {
+      const array = T.build(kind, layout, [], [102]);
+      Array0.blit(array, array);
+      expect(array).toHaveValueAt([], 102);
+    });
+
+    test("fill", () => {
+      const array = Array0.create(kind, layout);
+      Array0.fill(array, T.unpackValue(array, 93));
+      expect(array).toHaveValueAt([], 93);
+    });
+
+    test("change layout, same", () => {
+      const array = T.build(kind, layout, [], [12]);
+      const array2 = Array0.change_layout(array, layout);
+      expect(array2.layout).toBe(layout);
+      expect(array2.kind).toBe(kind);
+      expect(array2.buffer).toBe(array.buffer);
+      expect(array2).toHaveValueAt([], 12);
+    });
+
+    test("change layout, different", () => {
+      const array = T.build(kind, +!layout, [], [12]);
+      const array2 = Array0.change_layout(array, layout);
+      expect(array2.layout).toBe(layout);
+      expect(array2.kind).toBe(kind);
+      expect(array2.buffer).toBe(array.buffer);
+      expect(array2).toHaveValueAt([], 12);
+    });
+
+    test("of_value", () => {
+      const array = Array0.of_value(kind, layout, T.unpackValue(kind, 5));
+      expect(array).toHaveValueAt([], 5);
+    });
   });
 });
