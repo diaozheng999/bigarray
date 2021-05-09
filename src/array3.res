@@ -33,10 +33,10 @@ external get: (t<'a, 'b, 'c>, int, int, int) => 'a = "get3"
 external set: (t<'a, 'b, 'c>, int, int, int, 'a) => unit = "set3"
 
 @send
-external sub_left: (t<'a, 'b, c_layout>, int, int) => unit = "sub"
+external sub_left: (t<'a, 'b, c_layout>, int, int) => t<'a, 'b, c_layout> = "sub"
 
 @send
-external sub_right: (t<'a, 'b, fortran_layout>, int, int) => unit = "sub"
+external sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout> = "sub"
 
 @send
 external slice_left_1: (t<'a, 'b, c_layout>, int, int) => Array1.t<'a, 'b, c_layout> =

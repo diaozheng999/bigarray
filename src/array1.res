@@ -27,7 +27,7 @@ external get: (t<'a, 'b, 'c>, int) => 'a = "get1"
 external set: (t<'a, 'b, 'c>, int, 'a) => unit = "set1"
 
 @send
-external sub: (t<'a, 'b, 'c>, int, int) => unit = "sub1"
+external sub: (t<'a, 'b, 'c>, int, int) => t<'a, 'b, 'c> = "sub1"
 
 @send
 external slice: (t<'a, 'b, 'c>, int) => Array0.t<'a, 'b, 'c> = "slice1"

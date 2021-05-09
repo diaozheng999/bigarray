@@ -245,6 +245,25 @@ export function printArray(a: C<unknown>) {
   return result;
 }
 
+function checkBuffer1(
+  buffer1: ArrayBufferLike,
+  buffer2: ArrayBufferLike,
+  stride: number,
+  start: number,
+  end: number,
+) {
+  const p = new Uint8Array(buffer1);
+  const q = new Uint8Array(buffer2);
+  const d = start * stride;
+  const len = (end - start) * stride;
+  for (let i = 0; i < len; ++i) {
+    if (p[i + d] !== q[i]) {
+      return i;
+    }
+  }
+  return;
+}
+
 function checkBuffer(
   array: C<unknown>,
   values: number[],
@@ -267,10 +286,19 @@ function asArray(array: C<unknown>, start: number, end: number) {
   return a;
 }
 
+function buf(buffer: ArrayBufferLike, idx: number) {
+  const b = new Uint8Array(buffer);
+  const s = b[idx].toString(16);
+  if (s.length < 2) {
+    return `0x0${s}`;
+  }
+  return `0x${s}`;
+}
+
 function matchBuffer(
   matcher: jest.MatcherContext,
   received: C<unknown>,
-  expected: number[],
+  expected: number[] | C<unknown>,
   start: number,
   end: number,
   hint: () => string,
@@ -301,6 +329,55 @@ Received: (length ${matcher.utils.printReceived(received.length)})
 
 ${printArray(received)}`,
     };
+  }
+
+  if (expected instanceof C) {
+    const result = checkBuffer1(
+      received.buffer.buffer,
+      expected.buffer.buffer,
+      received.buffer.BYTES_PER_ELEMENT,
+      start,
+      end,
+    );
+    if (matcher.isNot) {
+      return {
+        pass: result === undefined,
+        message() {
+          return `${hint()}
+
+Received the same array.
+
+Expected
+========
+${matcher.utils.EXPECTED_COLOR`${printArray(expected)}`}
+
+Received
+========
+${matcher.utils.RECEIVED_COLOR`${printArray(received)}`}
+`;
+        },
+      };
+    } else {
+      return {
+        pass: result === undefined,
+        message() {
+          return `${hint()}
+          
+Byte ${matcher.utils.printReceived(result)} differs:
+
+Expected: ${matcher.utils.EXPECTED_COLOR`${buf(
+            expected.buffer.buffer,
+            result!,
+          )}`}
+Received: ${matcher.utils.RECEIVED_COLOR`${buf(
+            received.buffer.buffer,
+            result! + start * received.buffer.BYTES_PER_ELEMENT,
+          )}`}
+
+${printArray(received)}`;
+        },
+      };
+    }
   }
 
   const result = checkBuffer(received, expected, start, end);
@@ -426,26 +503,26 @@ ${printArray(array)}`;
     received: C<unknown>,
     start: number,
     end: number,
-    expected: number[],
+    expected: number[] | C<unknown>,
   ) {
     const options = { isNot: this.isNot, promise: this.promise };
     const hint = () =>
       this.utils.matcherHint(
         "toHaveBufferInRange",
         `array.slice(${start}, ${end})`,
-        `[${expected.join(", ")}]`,
+        `[${expected instanceof Array ? expected.join(", ") : "expected"}]`,
         options,
       );
     return matchBuffer(this, received, expected, start, end, hint);
   },
 
-  toHaveBuffer(received: C<unknown>, expected: number[]) {
+  toHaveBuffer(received: C<unknown>, expected: number[] | C<unknown>) {
     const options = { isNot: this.isNot, promise: this.promise };
     const hint = () =>
       this.utils.matcherHint(
         "toHaveBuffer",
         `array`,
-        `[${expected.join(", ")}]`,
+        `[${expected instanceof Array ? expected.join(", ") : "expected"}]`,
         options,
       );
     return matchBuffer(this, received, expected, 0, expected.length, hint);

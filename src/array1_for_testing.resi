@@ -18,7 +18,7 @@ let get: (t<'a, 'b, 'c>, int) => 'a
 
 let set: (t<'a, 'b, 'c>, int, 'a) => unit
 
-let sub: (t<'a, 'b, 'c>, int, int) => unit
+let sub: (t<'a, 'b, 'c>, int, int) => t<'a, 'b, 'c>
 
 let slice: (t<'a, 'b, 'c>, int) => Array0.t<'a, 'b, 'c>
 

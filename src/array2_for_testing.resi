@@ -20,9 +20,9 @@ let get: (t<'a, 'b, 'c>, int, int) => 'a
 
 let set: (t<'a, 'b, 'c>, int, int, 'a) => unit
 
-let sub_left: (t<'a, 'b, c_layout>, int, int) => unit
+let sub_left: (t<'a, 'b, c_layout>, int, int) => t<'a, 'b, c_layout>
 
-let sub_right: (t<'a, 'b, fortran_layout>, int, int) => unit
+let sub_right: (t<'a, 'b, fortran_layout>, int, int) => t<'a, 'b, fortran_layout>
 
 let slice_left: (t<'a, 'b, c_layout>, int) => Array1.t<'a, 'b, c_layout>
 

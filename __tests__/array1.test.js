@@ -72,6 +72,12 @@ describe.each`
       );
       expect(array).toHaveBuffer([1, 2, 3, 4, 5, 6]);
     });
+
+    test("sub all", () => {
+      const array = T.build(kind, layout, [5], 5);
+      const array1 = Array1.sub(array, 0, 5);
+      expect(array1).toHaveBuffer(array);
+    });
   });
 
   describe.each`
