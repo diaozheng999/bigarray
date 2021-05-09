@@ -27,15 +27,18 @@ export class Fortran<T> extends C<T> {
   }
 
   get1(i: number) {
-    return super.get1(i - 1);
+    this.validateFortranRange(i);
+    return this.unsafeGet1(i);
   }
 
   get2(i: number, j: number) {
-    return super.get2(j - 1, i - 1);
+    this.validateFortranRange(i, j);
+    return this.unsafeGet2(i, j);
   }
 
   get3(i: number, j: number, k: number) {
-    return super.get3(k - 1, j - 1, i - 1);
+    this.validateFortranRange(i, j, k);
+    return this.unsafeGet3(i, j, k);
   }
 
   get(dims: number[]) {
@@ -55,15 +58,18 @@ export class Fortran<T> extends C<T> {
   }
 
   set1(i: number, v: T) {
-    return super.set1(i - 1, v);
+    this.validateFortranRange(i);
+    return this.unsafeSet1(i, v);
   }
 
   set2(i: number, j: number, v: T) {
-    return super.set2(j - 1, i - 1, v);
+    this.validateFortranRange(i, j);
+    return this.unsafeSet2(i, j, v);
   }
 
   set3(i: number, j: number, k: number, v: T) {
-    return super.set3(k - 1, j - 1, i - 1, v);
+    this.validateFortranRange(i, j, k);
+    return this.unsafeSet3(i, j, k, v);
   }
 
   set(dims: number[], v: T) {
@@ -100,5 +106,12 @@ export class Fortran<T> extends C<T> {
       ndims.push(dims[i] - 1);
     }
     return ndims;
+  };
+
+  validateFortranRange = (...idx: number[]) => {
+    let d = -1;
+    for (let i = idx.length - 1; i >= 0; --i) {
+      this.validateRange(idx[i] - 1, ++d);
+    }
   };
 }

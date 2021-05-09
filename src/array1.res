@@ -45,4 +45,4 @@ external of_array: (kind<'a, 'b>, layout<'c>, array<'a>) => t<'a, 'b, 'c> = "fro
 external unsafe_get: (t<'a, 'b, 'c>, int) => 'a = "unsafeGet1"
 
 @send
-external unsafe_set: (t<'a, 'b, 'c>, int) => 'a = "unsafeSet1"
+external unsafe_set: (t<'a, 'b, 'c>, int, 'a) => 'a = "unsafeSet1"

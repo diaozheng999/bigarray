@@ -66,4 +66,4 @@ external of_array: (kind<'a, 'b>, layout<'c>, array<array<array<'a>>>) => t<'a, 
 external unsafe_get: (t<'a, 'b, 'c>, int, int) => 'a = "unsafeGet3"
 
 @send
-external unsafe_set: (t<'a, 'b, 'c>, int, int) => 'a = "unsafeSet3"
+external unsafe_set: (t<'a, 'b, 'c>, int, int, 'a) => 'a = "unsafeSet3"

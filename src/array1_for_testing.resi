@@ -30,4 +30,4 @@ let of_array: (kind<'a, 'b>, layout<'c>, array<'a>) => t<'a, 'b, 'c>
 
 let unsafe_get: (t<'a, 'b, 'c>, int) => 'a
 
-let unsafe_set: (t<'a, 'b, 'c>, int) => 'a
+let unsafe_set: (t<'a, 'b, 'c>, int, 'a) => 'a

@@ -1,6 +1,5 @@
 const Array0 = require("../lib/js/src/array0_for_testing.bs");
 const Types = require("../lib/js/src/types.bs");
-const Runtime = require("@nasi/bigarray-runtime");
 
 const T = require("@nasi/bigarray-runtime/lib/TestingLibrary");
 

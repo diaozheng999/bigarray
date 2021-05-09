@@ -111,6 +111,10 @@ export function unpackValue(
   }
 }
 
+export function map(kind: number, values: number[], wrap?: boolean) {
+  return values.map((n) => unpackValue(kind, n, wrap));
+}
+
 function compareValue(array: C<unknown>, unpacked: any, value: number) {
   switch (array.buffer.kind) {
     case 10:
@@ -241,6 +245,100 @@ export function printArray(a: C<unknown>) {
   return result;
 }
 
+function checkBuffer(
+  array: C<unknown>,
+  values: number[],
+  start: number,
+  end: number,
+) {
+  for (let i = start; i < end; ++i) {
+    if (!compareValue(array, array.buffer.at(i), values[i])) {
+      return i;
+    }
+  }
+  return;
+}
+
+function asArray(array: C<unknown>, start: number, end: number) {
+  let a = [];
+  for (let i = start; i < end; ++i) {
+    a.push(array.buffer.at(i));
+  }
+  return a;
+}
+
+function matchBuffer(
+  matcher: jest.MatcherContext,
+  received: C<unknown>,
+  expected: number[],
+  start: number,
+  end: number,
+  hint: () => string,
+) {
+  let len = end - start;
+  if (expected.length !== len) {
+    return {
+      pass: matcher.isNot,
+      message: () => `${hint()}
+
+Provided array doesn't match length.
+
+Expected: ${matcher.utils.printExpected(len)}
+Received: (length ${matcher.utils.printReceived(
+        expected.length,
+      )}) ${matcher.utils.printReceived(expected)}`,
+    };
+  }
+  if (received.length < len) {
+    return {
+      pass: matcher.isNot,
+      message: () => `${hint()}
+
+Provided Bigarray contains less than expected slice.
+
+Expected: ${matcher.utils.printExpected(len)}
+Received: (length ${matcher.utils.printReceived(received.length)})
+
+${printArray(received)}`,
+    };
+  }
+
+  const result = checkBuffer(received, expected, start, end);
+
+  if (matcher.isNot) {
+    return {
+      pass: result === undefined,
+      message() {
+        return `${hint()}
+
+Received the same array.
+
+Expected: ${matcher.utils.printExpected(expected)}
+Received: ${matcher.utils.printReceived(asArray(received, start, end))}
+
+${printArray(received)}
+`;
+      },
+    };
+  } else {
+    return {
+      pass: result === undefined,
+      message() {
+        return `${hint()}
+
+Index ${matcher.utils.printReceived(result)} differs:
+
+Expected: ${matcher.utils.printExpected(
+          unpackValue(received, expected[result!], false),
+        )}
+Received: ${matcher.utils.printReceived(received.buffer.at(result!))}
+
+${printArray(received)}`;
+      },
+    };
+  }
+}
+
 expect.extend({
   toHaveValueAt(array: C<unknown>, idx: number[], value: number) {
     const rotated = getIdx(array, idx);
@@ -322,6 +420,35 @@ Received: ${this.utils.printReceived(received)}
 ${printArray(array)}`;
       },
     };
+  },
+
+  toHaveBufferInRange(
+    received: C<unknown>,
+    start: number,
+    end: number,
+    expected: number[],
+  ) {
+    const options = { isNot: this.isNot, promise: this.promise };
+    const hint = () =>
+      this.utils.matcherHint(
+        "toHaveBufferInRange",
+        `array.slice(${start}, ${end})`,
+        `[${expected.join(", ")}]`,
+        options,
+      );
+    return matchBuffer(this, received, expected, start, end, hint);
+  },
+
+  toHaveBuffer(received: C<unknown>, expected: number[]) {
+    const options = { isNot: this.isNot, promise: this.promise };
+    const hint = () =>
+      this.utils.matcherHint(
+        "toHaveBuffer",
+        `array`,
+        `[${expected.join(", ")}]`,
+        options,
+      );
+    return matchBuffer(this, received, expected, 0, expected.length, hint);
   },
 });
 
