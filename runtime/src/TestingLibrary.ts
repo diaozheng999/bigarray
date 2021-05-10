@@ -248,16 +248,14 @@ export function printArray(a: C<unknown>) {
 function checkBuffer1(
   buffer1: ArrayBufferLike,
   buffer2: ArrayBufferLike,
-  stride: number,
-  start: number,
-  end: number,
+  offset1: number,
+  offset2: number,
+  len: number,
 ) {
-  const p = new Uint8Array(buffer1);
-  const q = new Uint8Array(buffer2);
-  const d = start * stride;
-  const len = (end - start) * stride;
+  const p = new Uint8Array(buffer1, offset1);
+  const q = new Uint8Array(buffer2, offset2);
   for (let i = 0; i < len; ++i) {
-    if (p[i + d] !== q[i]) {
+    if (p[i] !== q[i]) {
       return i;
     }
   }
@@ -286,13 +284,15 @@ function asArray(array: C<unknown>, start: number, end: number) {
   return a;
 }
 
-function buf(buffer: ArrayBufferLike, idx: number) {
-  const b = new Uint8Array(buffer);
-  const s = b[idx].toString(16);
-  if (s.length < 2) {
-    return `0x0${s}`;
-  }
-  return `0x${s}`;
+function buf(
+  clr: jest.MatcherColorFn,
+  buffer: ArrayBufferLike,
+  start: number,
+  idx: number,
+) {
+  const b = new Uint8Array(buffer, start);
+  const s = Array.from(b).map((n) => n.toString(16).padStart(2, "0"));
+  return `${clr`0x${s[idx]}`} (Buffer: [${clr`${s.join(" ")}`}])`;
 }
 
 function matchBuffer(
@@ -335,9 +335,9 @@ ${printArray(received)}`,
     const result = checkBuffer1(
       received.buffer.buffer,
       expected.buffer.buffer,
-      received.buffer.BYTES_PER_ELEMENT,
-      start,
-      end,
+      received.buffer.byteOffset + start * received.buffer.BYTES_PER_ELEMENT,
+      expected.buffer.byteOffset,
+      (end - start) * received.buffer.BYTES_PER_ELEMENT,
     );
     if (matcher.isNot) {
       return {
@@ -365,14 +365,18 @@ ${matcher.utils.RECEIVED_COLOR`${printArray(received)}`}
           
 Byte ${matcher.utils.printReceived(result)} differs:
 
-Expected: ${matcher.utils.EXPECTED_COLOR`${buf(
+Expected: ${buf(
+            matcher.utils.EXPECTED_COLOR,
             expected.buffer.buffer,
+            expected.buffer.byteOffset,
             result!,
-          )}`}
-Received: ${matcher.utils.RECEIVED_COLOR`${buf(
+          )}
+Received: ${buf(
+            matcher.utils.RECEIVED_COLOR,
             received.buffer.buffer,
-            result! + start * received.buffer.BYTES_PER_ELEMENT,
-          )}`}
+            received.buffer.byteOffset,
+            result!,
+          )}
 
 ${printArray(received)}`;
         },
